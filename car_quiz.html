@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Car quiz</title>
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <style>
+    img[usemap] {
+      border: none;
+      height: auto;
+      max-width: 100%;
+      width: auto;
+    }
+
+    .answer-box {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body ng-app="app">
+  <div ng-controller="HomeCtrl">
+
+    <img class="rwdimgmap" src="auto.png" alt="auto" width="960" height="540" border="0" usemap="#Map" />
+    <map name="Map" id="Map">
+      <div ng-repeat="part in auto_parts">
+        <div calculate-position class="form-group well answer-box" ng-class="part.invalid" ng-show="part.active">
+          <label class="control-label" for="part.type">Type name of car part:</label>
+          <input type="text" ng-name="part.type" ng-model="part.userAnswer" class="form-control" id="part.type"></input>
+        </div>
+        <area shape="{{part.shape}}" coords="{{part.coords}}" title="{{part.type}}" ng-click="part.active = !part.active" href="#" />
+      </div>
+    </map>
+
+    <button class="btn btn-default" ng-disabled="gameOver" ng-click="evaluate($event)">​Evaluate</button>
+    <h1 ng-show="gameOver">Result: {{results}}</h1>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+
+  <script type="text/javascript" charset="utf-8">
+    angular.module('app', [])
+      .controller('HomeCtrl', ['$scope', 'page_model', function($scope, page_model) {
+        $scope.auto_parts = page_model;
+
+        $scope.evaluate = function($event) {
+          $event.preventDefault();
+          $scope.gameOver = true;
+          $scope.results = 0;
+          for (var i = 0; i < $scope.auto_parts.length; ++i) {
+            if ($scope.auto_parts[i].userAnswer === $scope.auto_parts[i].answer) {
+              $scope.results++;
+              $scope.auto_parts[i].invalid = 'has-success';
+            } else {
+              $scope.auto_parts[i].invalid = 'has-error';
+            }
+            $scope.auto_parts[i].active = true;
+          }
+        };
+
+      }]).factory('page_model', [function() {
+
+        var o = [{
+          "shape": "circle",
+          "type": "kolo_przod",
+          "coords": "193,342,68",
+          "answer": "Koło przód",
+          "userAnswer": "",
+          "active": false
+        }, {
+          "shape": "circle",
+          "type": "kolo_tyl",
+          "coords": "743,341,68",
+          "answer": "Koło tył",
+          "userAnswer": "",
+          "active": false
+        }, {
+          "shape": "poly",
+          "type": "okna",
+          "coords": "379,220,692,202,701,172,639,157,571,149,482,151,434,162,397,176,369,191,384,198",
+          "answer": "Okna",
+          "userAnswer": "",
+          "active": false
+        }, {
+          "shape": "poly",
+          "type": "drzwi",
+          "coords": "302,353,634,350,697,263,710,231,713,211,709,202,716,174,643,153,574,144,479,146,441,154,382,180,298,233,291,279,295,327",
+          "answer": "Drzwi",
+          "userAnswer": "",
+          "active": false
+        }];
+
+        return o;
+      }]).service('getAreaCenter', [function() {
+        return {
+          calculateXY: function(shape, coords) {
+            var coordsArray = coords.split(','),
+              center = [];
+            if (shape == 'circle') {
+              // For circle areas the center is given by the first two values
+              center = [coordsArray[0], coordsArray[1]];
+            } else {
+              // For rect and poly areas we need to loop through the coordinates
+              var coord,
+                minX = maxX = parseInt(coordsArray[0], 10),
+                minY = maxY = parseInt(coordsArray[1], 10);
+              for (var i = 0, l = coordsArray.length; i < l; i++) {
+                coord = parseInt(coordsArray[i], 10);
+                if (i % 2 == 0) { // Even values are X coordinates
+                  if (coord < minX) {
+                    minX = coord;
+                  } else if (coord > maxX) {
+                    maxX = coord;
+                  }
+                } else { // Odd values are Y coordinates
+                  if (coord < minY) {
+                    minY = coord;
+                  } else if (coord > maxY) {
+                    maxY = coord;
+                  }
+                }
+              }
+              center = [parseInt((minX + maxX) / 2, 10), parseInt((minY + maxY) / 2, 10)];
+            }
+            return (center);
+          }
+        };
+      }]).directive("calculatePosition", ['getAreaCenter', function(getAreaCenter) {
+        return {
+          link: function(scope, element) {
+            var xy = getAreaCenter.calculateXY(scope.part.shape, scope.part.coords)
+            var offsetX = xy[0] - element.prop('offsetWidth') / 2;
+            var offsetY = (scope.part.type === 'okna') ? (xy[1] - element.prop('offsetHeight') / 2) : xy[1];
+            element.css({
+              'left': offsetX + 'px',
+              'top': offsetY + 'px'
+            });
+          }
+        }
+      }]);
+  </script>
+
+</body>
+
+</html>
