@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Array quiz</title>
+  <link rel="stylesheet" href="bootstrap.min.css">
+</head>
+
+<body ng-app="app">
+  <div ng-controller="HomeCtrl" class="container">
+
+    <div class="row">
+      <div class="col-md-6 col-md-offset-3">
+        <form name="form" ng-submit="evaluate($event)" novalidate>
+          <h1>Provide answers</h1>
+          <div ng-repeat="model in page_model">
+            <ng-form name="innerForm">
+              <div class="form-group" ng-class="{'has-error': innerForm.userAnswer.$error.answer && !innerForm.userAnswer.$dirty && subbmited, 'has-success': !innerForm.userAnswer.$error.answer && !innerForm.userAnswer.$dirty && subbmited, '': !innerForm.userAnswer.$dirty}">
+                <input name="userAnswer" ng-model="userAnswer" compare-answer="model.answer" class="form-control" />
+                <p class="help-block" ng-show="!innerForm.userAnswer.$error.answer && !innerForm.userAnswer.$dirty && subbmited">Earned points: {{model.points}}</p>
+                <p class="help-block" ng-show="innerForm.userAnswer.$error.answer && !innerForm.userAnswer.$dirty && subbmited">Earned points: 0</p>
+              </div>
+            </ng-form>
+          </div>
+          <input class="btn btn-default" type="submit" ng-click="evaluate()" value="Evaluate" />
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+
+  <script type="text/javascript" charset="utf-8">
+    angular.module('app', [])
+      .factory('model', [function() {
+
+        var o = [{
+          "id": 1,
+          "answer": ["first"],
+          "points": 2
+        }, {
+          "id": 2,
+          "answer": ["second", "druga"],
+          "points": 3
+        }, {
+          "id": 3,
+          "answer": ["third", "trzecia"],
+          "points": 4
+        }];
+
+        return o;
+      }]).controller('HomeCtrl', ['$scope', 'model', function($scope, model) {
+
+        $scope.page_model = model;
+
+        $scope.evaluate = function($event) {
+          $scope.form.$setPristine();
+          $scope.subbmited = true;
+        };
+
+      }]).directive('compareAnswer', ['$parse', function($parse) {
+        return {
+          require: 'ngModel',
+          link: function(scope, elemement, attrs, ngModel) {
+            var answers = $parse(attrs.compareAnswer)(scope);
+
+            ngModel.$parsers.unshift(function(value) {
+              var valid = answers.indexOf(value) !== -1;
+              ngModel.$dirty = true;
+              ngModel.$setValidity('answer', valid);
+              return valid ? undefined : value;
+            });
+
+            ngModel.$formatters.unshift(function(value) {
+              ngModel.$setValidity('answer', answers.indexOf(value) !== -1);
+              return value;
+            });
+          }
+        };
+      }]);
+  </script>
+
+</body>
+
+</html>
